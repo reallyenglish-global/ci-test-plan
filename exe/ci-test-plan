@@ -1,0 +1,32 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require 'json'
+require 'optparse'
+require_relative '../lib/ci_test_plan'
+
+begin
+  options = { root: Dir.pwd, head: 'HEAD', change_type: 'unknown', labels: [] }
+  parser = OptionParser.new do |opts|
+    opts.banner = 'Usage: ci-test-plan plan --base REF [--head REF] [--root DIR] [--type TYPE] [--labels LIST] [--config PATH]'
+    opts.on('--base REF') { |value| options[:base] = value }
+    opts.on('--head REF') { |value| options[:head] = value }
+    opts.on('--root DIR') { |value| options[:root] = value }
+    opts.on('--type TYPE', 'chore, bugfix, feat, unknown (default), release') { |value| options[:change_type] = value }
+    opts.on('--labels LIST', 'Escalations: ci:static, ci:affected, ci:smoke, ci:full, ci:full_e2e, ci:performance') { |value| options[:labels] = value.split(',').map(&:strip) }
+    opts.on('--config PATH', 'Tracked YAML configuration inside root') { |value| options[:config] = value }
+    opts.on('-h', '--help') { puts opts; exit 0 }
+  end
+  if ARGV == ['--help'] || ARGV == ['-h']
+    puts parser
+    exit 0
+  end
+  raise CITestPlan::Error unless ARGV.shift == 'plan'
+  parser.parse!(ARGV)
+  raise CITestPlan::Error unless ARGV.empty? && options.key?(:base)
+  result = CITestPlan.plan(**options)
+  puts JSON.generate(result)
+rescue CITestPlan::Error, OptionParser::ParseError, ArgumentError, EncodingError, SystemCallError
+  warn 'ci-test-plan: invalid input or repository state'
+  exit 2
+end
