@@ -15,7 +15,7 @@ jobs:
       matrix:
         ruby: ['3.2', '3.3', '3.4', '4.0']
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: ruby/setup-ruby@v1
         with:
           ruby-version: ${{ matrix.ruby }}
@@ -24,6 +24,7 @@ jobs:
         env:
           GIT_CONFIG_NOSYSTEM: '1'
           GIT_CONFIG_GLOBAL: /dev/null
+          TMPDIR: ${{ runner.temp }}
         run: bundle exec rake test
       - name: Build and exercise installed gem
         shell: bash
